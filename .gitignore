@@ -1,0 +1,48 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# Build
+dist/
+build/
+.next/
+.remix/
+public/build/
+
+# Environment
+.env
+.env.local
+.env.*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+
+# Logs
+logs/
+*.log
+
+# Testing
+coverage/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraformrc
+terraform.rc
+
+# Misc
+.cache/
+.temp/
