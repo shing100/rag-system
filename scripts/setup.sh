@@ -10,7 +10,7 @@ docker-compose build
 docker-compose up -d
 
 echo "개발 환경이 성공적으로 설정되었습니다."
-echo "프론트엔드: http://localhost:3000"
+echo "프론트엔드: http://localhost:3010"
 echo "API 게이트웨이: http://localhost:4010"
 echo "PostgreSQL: localhost:5432"
 echo "OpenSearch: http://localhost:9200"
