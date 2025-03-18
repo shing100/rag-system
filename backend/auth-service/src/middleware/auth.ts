@@ -30,8 +30,8 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
     }
 
     // 토큰 검증
-    const decoded = jwt.verify(token, config.jwt.secret as string) as any;
-    
+    const decoded = jwt.verify(token, config.jwtSecret as string) as any;
+
     // 사용자 정보를 요청 객체에 저장
     req.user = {
       id: decoded.id,
@@ -42,11 +42,11 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
     next();
   } catch (error) {
     logger.error('토큰 검증 오류', { error });
-    
+
     if ((error as Error).name === 'TokenExpiredError') {
       return res.status(401).json({ message: '토큰이 만료되었습니다' });
     }
-    
+
     return res.status(401).json({ message: '유효하지 않은 토큰입니다' });
   }
 };

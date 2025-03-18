@@ -14,7 +14,8 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-      - API_URL=http://localhost:5173
+      - API_URL=http://api-gateway:4000
+      - VITE_API_URL=http://localhost:4010 # 브라우저에서 사용할 API URL
       - VITE_HMR_HOST=localhost # Vite HMR 호스트 설정 추가
       - VITE_HMR_PROTOCOL=ws # Vite HMR 프로토콜 설정 추가
     depends_on:

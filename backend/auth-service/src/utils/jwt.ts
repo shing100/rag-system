@@ -8,11 +8,11 @@ type UserPayload = {
   name: string;
 };
 
-export const generateToken = (user: User): string => {
+export const generateToken = (userPayload: UserPayload): string => {
   const payload: UserPayload = {
-    id: user.id,
-    email: user.email,
-    name: user.name,
+    id: userPayload.id,
+    email: userPayload.email,
+    name: userPayload.name,
   };
 
   const options: SignOptions = {

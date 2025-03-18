@@ -17,7 +17,7 @@ export class User {
   @Column({ default: false })
   emailVerified!: boolean;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   profileImage!: string | null;
 
   @Column({ default: 'local' })

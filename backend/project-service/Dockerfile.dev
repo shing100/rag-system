@@ -2,6 +2,13 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# PostgreSQL 클라이언트와 bash 설치
+RUN apk add --no-cache postgresql-client bash
+
+# wait-for-it 스크립트 추가
+ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh /usr/local/bin/wait-for-it
+RUN chmod +x /usr/local/bin/wait-for-it
+
 COPY package*.json ./
 RUN npm install
 
@@ -9,4 +16,5 @@ COPY . .
 
 EXPOSE 4003
 
-CMD ["npm", "run", "dev"]
+# 데이터베이스 가용성을 확인한 후 앱 시작
+CMD ["sh", "-c", "wait-for-it postgres:5432 --timeout=30 -- npm run dev"]

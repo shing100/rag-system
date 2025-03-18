@@ -7,6 +7,7 @@ import {
   OneToMany
 } from 'typeorm';
 import { ProjectMember } from './projectMember';
+import { ProjectSettings } from './projectSettings';
 
 @Entity('projects')
 export class Project {
@@ -45,4 +46,7 @@ export class Project {
 
   @OneToMany(() => ProjectMember, member => member.project)
   members!: ProjectMember[];
+
+  @OneToMany(() => ProjectSettings, settings => settings.project)
+  settings!: ProjectSettings[];
 }
