@@ -63,9 +63,10 @@ export default function DocumentDetail() {
         }
         
         setError('');
-      } catch (err: any) {
+      } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다";
         console.error('데이터 조회 오류:', err);
-        setError('데이터를 불러오는 중 오류가 발생했습니다');
+        setError(`데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -108,7 +109,7 @@ export default function DocumentDetail() {
       setDocument(response.data.document);
     } catch (err) {
       console.error('문서 재처리 오류:', err);
-      setError('문서 재처리 요청 중 오류가 발생했습니다');
+      setError(`데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`);
     }
   };
 
@@ -122,7 +123,7 @@ export default function DocumentDetail() {
       navigate(`/dashboard/projects/${document?.projectId}/documents`);
     } catch (err) {
       console.error('문서 삭제 오류:', err);
-      setError('문서 삭제 중 오류가 발생했습니다');
+      setError(`데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`);
     }
   };
 
@@ -199,6 +200,7 @@ export default function DocumentDetail() {
             </div>
             <div className="flex space-x-3">
               
+              <a
                 href={downloadUrl}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -208,6 +210,7 @@ export default function DocumentDetail() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 다운로드
+              </a>
               </a>
               <Link
                 to={`/dashboard/projects/${document.projectId}/query?documentId=${documentId}`}

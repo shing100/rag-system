@@ -1,30 +1,33 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Document } from './document';
 
 @Entity('document_versions')
 export class DocumentVersion {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column('uuid')
-  documentId: string;
+  documentId!: string;
 
   @Column()
-  versionNumber: number;
+  versionNumber!: number;
 
   @Column()
-  filePath: string;
+  filePath!: string;
 
-  @Column()
-  fileSize: number;
+  @Column('bigint')
+  fileSize!: number;
 
   @Column('uuid')
-  createdBy: string;
+  createdBy!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
-  @ManyToOne(() => Document, (document) => document.versions)
+  @Column({ type: 'json', nullable: true })
+  metadata?: any;
+
+  @ManyToOne(() => Document, document => document.versions)
   @JoinColumn({ name: 'documentId' })
-  document: Document;
+  document!: Document;
 }

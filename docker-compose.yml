@@ -7,13 +7,16 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     ports:
-      - "3010:3000"
+      - "3010:5173"
+      - "8002:8002"
     volumes:
       - ./frontend:/app
       - /app/node_modules
     environment:
       - NODE_ENV=development
-      - API_URL=http://localhost:4010
+      - API_URL=http://localhost:5173
+      - VITE_HMR_HOST=localhost # Vite HMR 호스트 설정 추가
+      - VITE_HMR_PROTOCOL=ws # Vite HMR 프로토콜 설정 추가
     depends_on:
       - api-gateway
     networks:
@@ -184,13 +187,7 @@ services:
     depends_on:
       - minio
     entrypoint: >
-      /bin/sh -c "
-      sleep 5;
-      /usr/bin/mc config host add myminio http://minio:9000 minio minio123;
-      /usr/bin/mc mb --ignore-existing myminio/rag-documents;
-      /usr/bin/mc policy set public myminio/rag-documents;
-      exit 0;
-      "
+      /bin/sh -c " sleep 5; /usr/bin/mc config host add myminio http://minio:9000 minio minio123; /usr/bin/mc mb --ignore-existing myminio/rag-documents; /usr/bin/mc policy set public myminio/rag-documents; exit 0; "
     networks:
       - rag-network
 
@@ -199,6 +196,7 @@ volumes:
   opensearch-data:
   redis-data:
   minio-data:
+
 
 networks:
   rag-network:

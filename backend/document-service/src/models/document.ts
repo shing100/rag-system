@@ -1,58 +1,69 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany
+} from 'typeorm';
 import { DocumentVersion } from './documentVersion';
 
+// 문서 상태를 위한 enum 타입 추가
 export enum DocumentStatus {
   PENDING = 'pending',
   PROCESSING = 'processing',
   COMPLETED = 'completed',
-  FAILED = 'failed',
+  FAILED = 'failed'
 }
 
 @Entity('documents')
 export class Document {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column('uuid')
-  projectId: string;
+  projectId!: string;
 
   @Column('uuid')
-  uploaderId: string;
+  uploaderId!: string;
 
   @Column()
-  name: string;
+  name!: string;
 
   @Column()
-  filePath: string;
+  filePath!: string;
 
   @Column()
-  mimeType: string;
+  mimeType!: string;
 
-  @Column()
-  fileSize: number;
+  @Column('bigint')
+  fileSize!: number;
+
+  @Column({ type: 'json', nullable: true })
+  metadata?: any;
 
   @Column({
     type: 'enum',
     enum: DocumentStatus,
-    default: DocumentStatus.PENDING,
+    default: DocumentStatus.PENDING
   })
-  status: DocumentStatus;
+  status!: DocumentStatus;
+
+  @Column({ default: 'auto' })
+  language!: string;
 
   @Column({ nullable: true })
-  language: string;
-
-  @Column({ type: 'json', nullable: true })
-  metadata: any;
+  errorMessage?: string;
 
   @Column({ default: false })
-  isDeleted: boolean;
+  isDeleted!: boolean;
 
   @CreateDateColumn()
-  uploadedAt: Date;
+  uploadedAt!: Date;
 
-  @Column({ nullable: true, type: 'timestamp' })
-  processedAt: Date;
+  @UpdateDateColumn({ nullable: true })
+  processedAt!: Date | null;
 
-  @OneToMany(() => DocumentVersion, (version) => version.document)
-  versions: DocumentVersion[];
+  @OneToMany(() => DocumentVersion, version => version.document)
+  versions!: DocumentVersion[];
 }

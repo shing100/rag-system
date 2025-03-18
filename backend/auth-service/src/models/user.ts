@@ -1,46 +1,46 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import bcrypt from 'bcrypt';
 
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column()
-  name: string;
+  name!: string;
 
-  @Column()
-  password: string;
+  @Column({ select: false })
+  password!: string;
 
   @Column({ default: false })
-  emailVerified: boolean;
+  emailVerified!: boolean;
 
   @Column({ nullable: true })
-  profileImage: string;
+  profileImage!: string | null;
+
+  @Column({ default: 'local' })
+  authProvider!: string;
 
   @Column({ nullable: true })
-  authProvider: string;
-
-  @Column({ type: 'json', nullable: true })
-  preferences: any;
+  authProviderId?: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 
-  // 비밀번호 해싱 메서드
-  async hashPassword() {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+  // 암호 비교 메서드 (실제 구현은 서비스 레이어에서)
+  async comparePassword(candidatePassword: string): Promise<boolean> {
+    // 비밀번호 비교 로직 (bcrypt 등 사용)
+    return Promise.resolve(false); // 실제 구현 필요
   }
 
-  // 비밀번호 검증 메서드
-  async comparePassword(candidatePassword: string): Promise<boolean> {
-    return bcrypt.compare(candidatePassword, this.password);
+  // JWT 토큰 생성 (실제 구현은 서비스 레이어에서)
+  generateJwtToken(): string {
+    // JWT 생성 로직
+    return ''; // 실제 구현 필요
   }
 }

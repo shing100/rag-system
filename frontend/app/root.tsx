@@ -1,22 +1,19 @@
 import type { MetaFunction } from "@remix-run/node";
 import {
   Links,
-  LiveReload,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
 } from "@remix-run/react";
-import styles from "./styles/tailwind.css";
+import "./styles/tailwind.css"; // 단순히 CSS 파일 가져오기
+
 
 export const meta: MetaFunction = () => [
   { title: "RAG 시스템" },
   { name: "description", content: "Retrieval-Augmented Generation 시스템" },
 ];
 
-export function links() {
-  return [{ rel: "stylesheet", href: styles }];
-}
 
 export default function App() {
   return (
@@ -31,7 +28,6 @@ export default function App() {
         <Outlet />
         <ScrollRestoration />
         <Scripts />
-        <LiveReload />
       </body>
     </html>
   );

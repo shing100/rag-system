@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import * as authController from '../controllers/authController';
-import { protect } from '../middleware/auth';
+import { verifyToken } from '../middleware/auth';
 
 const router = Router();
 
+// 인증 관련 라우트
 router.post('/register', authController.register);
 router.post('/login', authController.login);
-router.get('/verify', protect, authController.verifyToken);
+router.post('/logout', authController.logout);
+router.get('/me', verifyToken, authController.getCurrentUser);
 router.post('/reset-password/request', authController.requestPasswordReset);
+router.post('/reset-password/confirm', authController.confirmPasswordReset);
 
 export default router;

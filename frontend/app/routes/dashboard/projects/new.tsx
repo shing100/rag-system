@@ -51,9 +51,10 @@ export default function NewProject() {
 
       // 성공 시 프로젝트 상세 페이지로 이동
       navigate(`/dashboard/projects/${response.data.project.id}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다";
       console.error('프로젝트 생성 오류:', err);
-      setError(err.response?.data?.message || '프로젝트 생성 중 오류가 발생했습니다');
+      setError(`데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`);
     } finally {
       setLoading(false);
     }

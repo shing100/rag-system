@@ -34,9 +34,10 @@ export default function ProjectsIndex() {
         const response = await api.get(`/api/projects?archived=${showArchived}`);
         setProjects(response.data.projects || []);
         setError('');
-      } catch (err: any) {
+      } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다";
         console.error('프로젝트 조회 오류:', err);
-        setError('프로젝트를 불러오는 중 오류가 발생했습니다');
+        setError(`데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`);
       } finally {
         setLoading(false);
       }

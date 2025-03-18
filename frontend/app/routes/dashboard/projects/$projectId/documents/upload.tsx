@@ -39,7 +39,7 @@ export default function DocumentUpload() {
         setProject(response.data.project);
       } catch (err) {
         console.error('프로젝트 조회 오류:', err);
-        setError('프로젝트 정보를 불러오는 중 오류가 발생했습니다');
+        setError(`데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`);
       }
     };
 
@@ -119,26 +119,42 @@ export default function DocumentUpload() {
       
       try {
         // 1. 업로드 URL 요청
-        const urlResponse = await api.post('/api/upload-url', {
-          fileName: file.name,
-          contentType: file.type,
-        });
-        
-        const { uploadUrl, key } = urlResponse.data;
-        
-        // 2. 파일 업로드 (직접 URL에 PUT 요청)
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          body: file,
-          headers: {
-            'Content-Type': file.type,
-          },
-        });
-        
-        if (!uploadResponse.ok) {
-          throw new Error('파일 업로드 중 오류가 발생했습니다');
-        }
-        
+        // 1. 업로드 URL 요청
+        try {
+          setUploading(true);
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('projectId', projectId || '');
+          
+          if (replaceDocumentId) {
+            // 기존 문서에 새 버전 추가
+            await api.post(`/api/documents/${replaceDocumentId}/versions`, formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+              onUploadProgress: (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
+                setUploadProgress((prev) => ({
+                  ...prev,
+                  [file.name]: percentCompleted,
+                }));
+              },
+            });
+          } else {
+            // 새 문서 생성
+            await api.post(`/api/projects/${projectId}/documents`, formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+              onUploadProgress: (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
+                setUploadProgress((prev) => ({
+                  ...prev,
+                  [file.name]: percentCompleted,
+                }));
+              },
+            });
+          }
         // 3. 문서 메타데이터 생성 또는 새 버전 생성
         if (replaceDocumentId) {
           // 기존 문서에 새 버전 추가
@@ -167,7 +183,7 @@ export default function DocumentUpload() {
         }));
       } catch (err) {
         console.error(`파일 업로드 오류 (${file.name}):`, err);
-        setError(`${file.name} 업로드 중 오류가 발생했습니다`);
+        setError(`데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`);
       }
     }
     

@@ -1,35 +1,43 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn
+} from 'typeorm';
 import { Project } from './project';
 
+// 프로젝트 멤버 역할 열거형
 export enum ProjectRole {
   OWNER = 'owner',
   ADMIN = 'admin',
   EDITOR = 'editor',
-  VIEWER = 'viewer',
+  VIEWER = 'viewer'
 }
 
 @Entity('project_members')
 export class ProjectMember {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column('uuid')
-  projectId: string;
+  projectId!: string;
 
   @Column('uuid')
-  userId: string;
+  userId!: string;
 
   @Column({
     type: 'enum',
     enum: ProjectRole,
-    default: ProjectRole.VIEWER,
+    default: ProjectRole.VIEWER
   })
-  role: ProjectRole;
+  role!: ProjectRole;
 
   @CreateDateColumn()
-  joinedAt: Date;
+  joinedAt!: Date;
 
-  @ManyToOne(() => Project, (project) => project.members)
+  @ManyToOne(() => Project, project => project.members)
   @JoinColumn({ name: 'projectId' })
-  project: Project;
+  project!: Project;
 }

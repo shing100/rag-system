@@ -1,34 +1,35 @@
 import { Router } from 'express';
+import multer from 'multer';
 import * as documentController from '../controllers/documentController';
 import * as versionController from '../controllers/versionController';
 import { protect } from '../middleware/auth';
 
 const router = Router();
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
-// 모든 라우트에 인증 미들웨어 적용
-router.use(protect);
+// 문서 기본 관리 API
+router.get('/projects/:projectId/documents', protect, documentController.getDocuments);
+router.post('/projects/:projectId/documents', protect, upload.single('file'), documentController.uploadDocument);
+router.get('/:documentId', protect, documentController.getDocument);
+router.put('/:documentId', protect, documentController.updateDocument);
+router.delete('/:documentId', protect, documentController.deleteDocument);
+router.post('/:documentId/restore', protect, documentController.restoreDocument);
 
-// 프로젝트별 문서 관리
-router.get('/projects/:projectId/documents', documentController.getDocuments);
-router.post('/projects/:projectId/documents', documentController.createDocument);
+// 문서 처리 상태 API
+router.get('/:documentId/status', protect, documentController.getDocumentStatus);
+router.post('/:documentId/process', protect, documentController.processDocument);
+router.post('/:documentId/reprocess', protect, documentController.reprocessDocument);
+router.post('/projects/:projectId/reindex', protect, documentController.reindexProjectDocuments);
 
-// 개별 문서 관리
-router.get('/documents/:documentId', documentController.getDocument);
-router.put('/documents/:documentId', documentController.updateDocument);
-router.delete('/documents/:documentId', documentController.deleteDocument);
-router.post('/documents/:documentId/restore', documentController.restoreDocument);
+// 문서 내용 API
+router.get('/:documentId/content', protect, documentController.getDocumentContent);
+router.get('/:documentId/download', protect, documentController.downloadDocument);
 
-// 문서 처리 상태
-router.get('/documents/:documentId/status', documentController.getDocumentStatus);
-router.post('/documents/:documentId/reprocess', documentController.reprocessDocument);
-
-// 문서 버전 관리
-router.get('/documents/:documentId/versions', versionController.getVersions);
-router.post('/documents/:documentId/versions', versionController.createVersion);
-router.get('/documents/:documentId/versions/:versionId', versionController.getVersion);
-router.post('/documents/:documentId/revert/:versionId', versionController.revertToVersion);
-
-// 업로드 URL 생성
-router.post('/upload-url', documentController.createUploadUrl);
+// 문서 버전 관리 API
+router.get('/:documentId/versions', protect, versionController.getVersions);
+router.post('/:documentId/versions', protect, upload.single('file'), versionController.createVersion);
+router.get('/:documentId/versions/:versionId', protect, versionController.getVersion);
+router.post('/:documentId/revert/:versionId', protect, versionController.revertToVersion);
 
 export default router;
