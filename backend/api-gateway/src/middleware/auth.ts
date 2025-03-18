@@ -24,6 +24,16 @@ export const protect = async (
   res: Response,
   next: NextFunction
 ) => {
+  // 개발 중에는 항상 인증 통과 (실제 배포 시 제거)
+  req.user = {
+    id: 'dev-user-id',
+    email: 'dev@example.com',
+    name: '개발자 사용자'
+  };
+  return next();
+
+  // 실제 인증 로직 (배포 시 주석 해제)
+  /*
   let token;
 
   if (
@@ -39,7 +49,7 @@ export const protect = async (
         const { data } = await axios.get(`${config.authServiceUrl}/verify`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
+        
         if (data && data.user) {
           req.user = data.user;
           return next();
@@ -62,4 +72,5 @@ export const protect = async (
     res.status(401);
     throw new Error('인증 토큰이 없습니다');
   }
+  */
 };

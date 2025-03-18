@@ -1,17 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
 import api from '../../lib/api';
+import MessageFormatter from './MessageFormatter';
+import { v4 as uuidv4 } from 'uuid';
+import {
+    ArrowDownTrayIcon,
+    DocumentTextIcon,
+    TrashIcon,
+    UserIcon,
+    ChatBubbleBottomCenterTextIcon
+} from '@heroicons/react/24/outline';
+
+interface Source {
+    id: string;
+    title: string;
+    snippet: string;
+    relevance: number;
+}
 
 interface ChatMessage {
-    id?: string;
+    id: string;
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
-    sources?: Array<{
-        id: string;
-        title: string;
-        snippet: string;
-        relevance: number;
-    }>;
+    feedback?: 'positive' | 'negative';
+    sources?: Source[];
+    summarized?: boolean;
+}
+
+interface QueryResponse {
+    id: string;
+    query: string;
+    answer: string;
+    responseId: string;
+    sources: Source[];
+    createdAt: string;
 }
 
 interface ChatInterfaceProps {
@@ -77,66 +99,7 @@ export default function ChatInterface({ projectId, className = '' }: ChatInterfa
         }
     }, [messages]);
 
-    // 질문 제출 핸들러
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!inputValue.trim() || isLoading) return;
-
-        const userMessage: ChatMessage = {
-            role: 'user',
-            content: inputValue.trim(),
-            timestamp: new Date(),
-        };
-
-        setMessages(prev => [...prev, userMessage]);
-        setInputValue('');
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            const response = await api.post(`/api/queries`, {
-                projectId,
-                query: userMessage.content,
-                options: {
-                    useHybridSearch: true,
-                    limit: 5,
-                    temperature: 0.7,
-                }
-            });
-
-            const aiMessage: ChatMessage = {
-                id: response.id,
-                role: 'assistant',
-                content: response.answer,
-                timestamp: new Date(),
-                sources: response.sources,
-            };
-
-            setMessages(prev => [...prev, aiMessage]);
-        } catch (err) {
-            console.error('질의 오류:', err);
-            const errorMessage = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다';
-            setError(`질문에 답변하는 중 오류가 발생했습니다: ${errorMessage}`);
-
-            // 에러 메시지 추가
-            const errorResponse: ChatMessage = {
-                role: 'assistant',
-                content: `죄송합니다. 요청을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.`,
-                timestamp: new Date(),
-            };
-
-            setMessages(prev => [...prev, errorResponse]);
-        } finally {
-            setIsLoading(false);
-            // 입력창에 포커스
-            if (inputRef.current) {
-                inputRef.current.focus();
-            }
-        }
-    };
-
-    // 대화 내역 초기화
+    // 대화 기록 초기화 함수
     const handleClearChat = () => {
         if (window.confirm('대화 내역을 모두 삭제하시겠습니까?')) {
             setMessages([]);
@@ -161,6 +124,112 @@ export default function ChatInterface({ projectId, className = '' }: ChatInterfa
         setInputValue(e.target.value);
         e.target.style.height = 'auto';
         e.target.style.height = Math.min(150, e.target.scrollHeight) + 'px';
+    };
+
+    // 대화 내용을 다운로드하는 함수
+    const handleDownloadChat = () => {
+        // 파일 이름을 현재 날짜와 시간으로 설정
+        const fileName = `chat-${new Date().toISOString().replace(/:/g, '-')}.md`;
+
+        // 대화 내용을 마크다운 형식으로 변환
+        let markdownContent = `# RAG 시스템 대화 기록\n\n`;
+        markdownContent += `생성 시간: ${new Date().toLocaleString()}\n\n`;
+
+        // 각 메시지를 마크다운으로 변환
+        messages.forEach(message => {
+            const role = message.role === 'user' ? '사용자' : '어시스턴트';
+            markdownContent += `## ${role} (${new Date(message.timestamp).toLocaleString()})\n\n`;
+            markdownContent += `${message.content}\n\n`;
+
+            // 출처 정보가 있으면 추가
+            if (message.sources && message.sources.length > 0) {
+                markdownContent += `### 출처:\n\n`;
+                message.sources.forEach(source => {
+                    markdownContent += `- ${source.title}\n`;
+                    if (source.snippet) {
+                        markdownContent += `  > ${source.snippet}\n`;
+                    }
+                });
+                markdownContent += `\n`;
+            }
+
+            // 피드백 정보가 있으면 추가
+            if (message.feedback) {
+                markdownContent += `### 피드백: ${message.feedback === 'positive' ? '👍 유용함' : '👎 유용하지 않음'}\n\n`;
+            }
+        });
+
+        // 마크다운 내용을 블롭(Blob)으로 변환
+        const blob = new Blob([markdownContent], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+
+        // 다운로드 링크 생성 및 클릭
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+
+        // 메모리 누수 방지를 위해 URL 및 요소 정리
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+    };
+
+    // 피드백 제출
+    const handleFeedback = async (messageId: string | undefined, feedback: 'positive' | 'negative') => {
+        if (!messageId) return;
+
+        // 메시지 상태 업데이트
+        setMessages(prev =>
+            prev.map(msg =>
+                msg.id === messageId
+                    ? { ...msg, feedback }
+                    : msg
+            )
+        );
+
+        try {
+            // 서버에 피드백 전송
+            await api.post(`/api/queries/${messageId}/feedback`, {
+                rating: feedback === 'positive' ? 1 : 0,
+                comment: ''
+            });
+            console.log('피드백이 성공적으로 제출되었습니다.');
+        } catch (err) {
+            console.error('피드백 제출 오류:', err);
+            // UI 상태는 이미 업데이트했으므로 사용자에게는 오류를 표시하지 않음
+        }
+    };
+
+    // 요약 함수 추가
+    const summarizeConversation = async (messages: ChatMessage[]) => {
+        try {
+            setIsLoading(true);
+            const response = await api.post<{ summary: string }>('/api/queries/summarize', {
+                messages: messages.map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                }))
+            });
+
+            // 요약 메시지 생성
+            const summaryMessage: ChatMessage = {
+                id: uuidv4(),
+                role: 'assistant',
+                content: `**대화 요약:**\n\n${response.data.summary}`,
+                timestamp: new Date(),
+                summarized: true
+            };
+
+            setMessages(prevMessages => [...prevMessages, summaryMessage]);
+            setIsLoading(false);
+        } catch (error) {
+            console.error('대화 요약 실패:', error);
+            setError('대화를 요약하는 중 오류가 발생했습니다.');
+            setIsLoading(false);
+        }
     };
 
     // 로딩 인디케이터
@@ -203,23 +272,96 @@ export default function ChatInterface({ projectId, className = '' }: ChatInterfa
         </div>
     );
 
-    // 소스 인용 렌더링
-    const renderSources = (sources: ChatMessage['sources']) => {
-        if (!sources || sources.length === 0) return null;
+    // 피드백 버튼 렌더링
+    const renderFeedbackButtons = (message: ChatMessage) => {
+        // 이미 피드백이 있는 경우
+        if (message.feedback) {
+            return (
+                <div className="mt-2 text-sm text-gray-500">
+                    {message.feedback === 'positive' ? '👍 유용한 답변이라고 평가했습니다.' : '👎 유용하지 않은 답변이라고 평가했습니다.'}
+                </div>
+            );
+        }
 
         return (
-            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">출처 문서:</h4>
-                <div className="space-y-2">
-                    {sources.map((source) => (
-                        <div key={source.id} className="text-xs bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                            <div className="font-medium text-gray-700 dark:text-gray-300">{source.title}</div>
-                            <div className="text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{source.snippet}</div>
-                        </div>
-                    ))}
-                </div>
+            <div className="mt-2 flex space-x-2">
+                <button
+                    onClick={() => handleFeedback(message.id, 'positive')}
+                    className="text-sm text-gray-500 hover:text-green-500"
+                    aria-label="Positive feedback"
+                >
+                    👍 유용해요
+                </button>
+                <button
+                    onClick={() => handleFeedback(message.id, 'negative')}
+                    className="text-sm text-gray-500 hover:text-red-500"
+                    aria-label="Negative feedback"
+                >
+                    👎 유용하지 않아요
+                </button>
             </div>
         );
+    };
+
+    // 질문 제출 핸들러
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!inputValue.trim() || isLoading) return;
+
+        const userMessage: ChatMessage = {
+            id: uuidv4(),
+            role: 'user',
+            content: inputValue.trim(),
+            timestamp: new Date(),
+        };
+
+        setMessages(prev => [...prev, userMessage]);
+        setInputValue('');
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const { data } = await api.post<QueryResponse>(`/api/queries`, {
+                projectId,
+                query: userMessage.content,
+                options: {
+                    useHybridSearch: true,
+                    limit: 5,
+                    temperature: 0.7,
+                }
+            });
+
+            const aiMessage: ChatMessage = {
+                id: data.id,
+                role: 'assistant',
+                content: data.answer,
+                timestamp: new Date(),
+                sources: data.sources,
+            };
+
+            setMessages(prev => [...prev, aiMessage]);
+        } catch (err) {
+            console.error('질의 오류:', err);
+            const errorMessage = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다';
+            setError(`질문에 답변하는 중 오류가 발생했습니다: ${errorMessage}`);
+
+            // 에러 메시지 추가
+            const errorResponse: ChatMessage = {
+                id: uuidv4(),
+                role: 'assistant',
+                content: `죄송합니다. 요청을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.`,
+                timestamp: new Date(),
+            };
+
+            setMessages(prev => [...prev, errorResponse]);
+        } finally {
+            setIsLoading(false);
+            // 입력창에 포커스
+            if (inputRef.current) {
+                inputRef.current.focus();
+            }
+        }
     };
 
     return (
@@ -232,31 +374,71 @@ export default function ChatInterface({ projectId, className = '' }: ChatInterfa
                     </p>
                 </div>
                 {messages.length > 0 && (
-                    <button
-                        onClick={handleClearChat}
-                        className="text-gray-500 hover:text-red-500 p-2 rounded-full"
-                        title="대화 내역 초기화"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                    </button>
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={handleDownloadChat}
+                            className="text-gray-500 hover:text-blue-500 p-2 rounded-full"
+                            title="대화 내역 다운로드"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </button>
+                        <button
+                            onClick={handleClearChat}
+                            className="text-gray-500 hover:text-red-500 p-2 rounded-full"
+                            title="대화 내역 초기화"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
                 )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-96">
                 {messages.length === 0 && renderEmptyState()}
 
-                {messages.map((message, index) => (
-                    <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div
-                            className={`max-w-3/4 rounded-lg p-3 ${message.role === 'user'
-                                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100'
-                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'
-                                }`}
-                        >
-                            <div className="whitespace-pre-line">{message.content}</div>
-                            {message.sources && renderSources(message.sources)}
+                {messages.map((message) => (
+                    <div
+                        key={message.id}
+                        className={`p-4 ${message.role === 'user'
+                            ? 'bg-blue-50 dark:bg-blue-900/20'
+                            : message.summarized
+                                ? 'bg-green-50 dark:bg-green-900/20'
+                                : 'bg-gray-50 dark:bg-gray-800'
+                            } rounded-lg my-2`}
+                    >
+                        <div className="flex items-start">
+                            <div className="mr-2">
+                                {message.role === 'user' ? (
+                                    <UserIcon className="h-6 w-6 text-blue-500" />
+                                ) : message.summarized ? (
+                                    <DocumentTextIcon className="h-6 w-6 text-green-500" />
+                                ) : (
+                                    <ChatBubbleBottomCenterTextIcon className="h-6 w-6 text-purple-500" />
+                                )}
+                            </div>
+                            <div className="flex-1">
+                                <MessageFormatter content={message.content} />
+
+                                {message.sources && message.sources.length > 0 && (
+                                    <div className="mt-2">
+                                        <h4 className="text-sm font-semibold mb-1">출처:</h4>
+                                        <div className="text-xs space-y-1">
+                                            {message.sources.map((source, idx) => (
+                                                <div key={idx} className="p-1 bg-gray-100 dark:bg-gray-700 rounded">
+                                                    <p>{source.title}</p>
+                                                    <p className="text-gray-500">{source.snippet}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {message.role === 'assistant' && !message.summarized && renderFeedbackButtons(message)}
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -299,6 +481,37 @@ export default function ChatInterface({ projectId, className = '' }: ChatInterfa
                     </button>
                 </div>
             </form>
+
+            <div className="flex justify-between items-center mt-4 mb-2">
+                <div>
+                    <button
+                        onClick={handleDownloadChat}
+                        disabled={messages.length === 0}
+                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
+                        aria-label="Download chat"
+                    >
+                        <ArrowDownTrayIcon className="h-5 w-5" />
+                    </button>
+                </div>
+                <div>
+                    <button
+                        onClick={() => summarizeConversation(messages)}
+                        disabled={messages.length < 3 || isLoading}
+                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50 mr-2"
+                        aria-label="Summarize conversation"
+                    >
+                        <DocumentTextIcon className="h-5 w-5" />
+                    </button>
+                    <button
+                        onClick={() => handleClearChat()}
+                        disabled={messages.length === 0}
+                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
+                        aria-label="Clear chat"
+                    >
+                        <TrashIcon className="h-5 w-5" />
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }

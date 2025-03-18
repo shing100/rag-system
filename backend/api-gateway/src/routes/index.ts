@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { createServiceProxy } from '../proxies/serviceProxy';
 import config from '../config';
 import { protect } from '../middleware/auth';
+import { summarizeConversation } from '../controllers/rag.controller';
 
 const router = Router();
 
@@ -19,5 +20,8 @@ router.use('/api/projects', protect, createServiceProxy('project-service', confi
 router.use('/api/documents', protect, createServiceProxy('document-service', config.documentServiceUrl));
 router.use('/api/queries', protect, createServiceProxy('rag-service', config.ragServiceUrl));
 router.use('/api/analytics', protect, createServiceProxy('analytics-service', config.analyticsServiceUrl));
+
+// 대화 요약 엔드포인트
+router.post('/api/queries/summarize', protect, summarizeConversation);
 
 export default router;
