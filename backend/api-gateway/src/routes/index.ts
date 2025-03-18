@@ -17,7 +17,7 @@ router.use('/api/auth', createServiceProxy('auth-service', config.authServiceUrl
 router.use('/api/users', protect, createServiceProxy('user-service', config.userServiceUrl));
 router.use('/api/projects', protect, createServiceProxy('project-service', config.projectServiceUrl));
 router.use('/api/documents', protect, createServiceProxy('document-service', config.documentServiceUrl));
-router.use('/api/rag', protect, createServiceProxy('rag-service', config.ragServiceUrl));
+router.use('/api/queries', protect, createServiceProxy('rag-service', config.ragServiceUrl));
 router.use('/api/analytics', protect, createServiceProxy('analytics-service', config.analyticsServiceUrl));
 
 export default router;

@@ -157,3 +157,24 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     res.status(500).json({ message: '서버 오류가 발생했습니다' });
   }
 };
+
+// 토큰 검증 및 사용자 정보 반환
+export const verifyToken = async (req: Request, res: Response) => {
+  try {
+    // 미들웨어에서 토큰 검증이 이미 완료되었고, req.user에 사용자 정보가 있음
+    if (!req.user) {
+      return res.status(401).json({ message: '인증되지 않은 요청입니다' });
+    }
+
+    res.status(200).json({
+      user: {
+        id: req.user.id,
+        email: req.user.email,
+        name: req.user.name
+      }
+    });
+  } catch (error) {
+    logger.error('토큰 검증 중 오류 발생', { error });
+    res.status(500).json({ message: '서버 오류가 발생했습니다' });
+  }
+};
