@@ -6,12 +6,12 @@ import {
   Scripts,
   ScrollRestoration,
 } from "@remix-run/react";
-import "./styles/tailwind.css"; // 단순히 CSS 파일 가져오기
+import "./tailwind.css"; // 경로 수정
 
 
 export const meta: MetaFunction = () => [
-  { title: "RAG 시스템" },
-  { name: "description", content: "Retrieval-Augmented Generation 시스템" },
+  { title: "Uri - 스마트한 문서 질의응답" },
+  { name: "description", content: "Uri는 인공지능을 활용한 스마트한 문서 질의응답 플랫폼입니다." },
 ];
 
 

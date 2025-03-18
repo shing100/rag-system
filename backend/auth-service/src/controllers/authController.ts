@@ -36,9 +36,23 @@ export const register = async (req: Request, res: Response) => {
 
     await userRepository.save(user);
 
+    // 프론트엔드가 기대하는 응답 형식으로 변경
+    // JWT 토큰 생성
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      name: user.name
+    });
+
     res.status(201).json({
       message: '회원가입이 완료되었습니다',
-      userId: user.id
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        emailVerified: user.emailVerified
+      },
+      token
     });
   } catch (error) {
     logger.error('회원가입 처리 중 오류 발생', { error });
@@ -117,7 +131,7 @@ export const confirmPasswordReset = async (req: Request, res: Response) => {
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
-    
+
     if (!userId) {
       return res.status(401).json({ message: '인증되지 않은 요청입니다' });
     }

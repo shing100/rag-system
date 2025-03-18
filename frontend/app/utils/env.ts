@@ -6,9 +6,13 @@
 export function getClientEnv(key: string, defaultValue: string = ''): string {
     // Vite는 클라이언트 측 코드에서 import.meta.env.VITE_* 변수에 접근할 수 있도록 함
     if (typeof window !== 'undefined') {
-        // @ts-expect-error - Vite 환경 변수 접근 타입이 정의되지 않음
-        const value = import.meta.env[key];
-        return value || defaultValue;
+        try {
+            // @ts-expect-error - Vite 환경 변수 접근은 타입 정의가 없음
+            const value = import.meta.env[key];
+            return value || defaultValue;
+        } catch (e) {
+            return defaultValue;
+        }
     }
     return defaultValue;
 }

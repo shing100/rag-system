@@ -29,7 +29,7 @@ services:
       context: ./backend/api-gateway
       dockerfile: Dockerfile.dev
     ports:
-      - "4010:4000"
+      - "4000:4000"
     volumes:
       - ./backend/api-gateway:/app
       - /app/node_modules

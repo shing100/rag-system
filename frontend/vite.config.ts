@@ -25,8 +25,8 @@ export default defineConfig({
     hmr: {
       // Docker를 사용할 때 HMR이 작동하도록 설정
       host: '0.0.0.0',
-      port: 5173, // 또는 다른 포트
-      clientPort: 3010 // 외부에서 접근하는 포트
+      port: 5173, // HMR 웹소켓 포트
+      protocol: 'ws',
     },
     watch: {
       usePolling: true // Docker 볼륨에서 파일 변경 감지를 위해

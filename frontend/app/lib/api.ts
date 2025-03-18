@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = typeof window !== 'undefined' 
+const API_URL = typeof window !== 'undefined'
   ? window.ENV?.API_URL || 'http://localhost:4010'
   : process.env.API_URL || 'http://localhost:4010'\;
 
@@ -17,7 +17,7 @@ api.interceptors.request.use(
     const token = localStorage.getItem('auth-storage')
       ? JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.token
       : null;
-    
+
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
