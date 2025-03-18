@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, useParams, useNavigate } from '@remix-run/react';
-import { useAuthStore } from '~/store/auth';
-import api from '~/lib/api';
+import { Link, useParams } from '@remix-run/react';
+import api from '../../../lib/api';
+import ChatInterface from '../../../components/ui/ChatInterface';
 
 interface Project {
   id: string;
@@ -17,28 +17,11 @@ interface Project {
   ownerId: string;
 }
 
-interface ProjectMember {
-  id: string;
-  userId: string;
-  role: string;
-  joinedAt: string;
-}
-
 export default function ProjectDetail() {
   const { projectId } = useParams();
   const [project, setProject] = useState<Project | null>(null);
-  const [members, setMembers] = useState<ProjectMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  const { isAuthenticated, user } = useAuthStore();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/auth/login');
-    }
-  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     const fetchProjectDetails = async () => {
@@ -46,10 +29,9 @@ export default function ProjectDetail() {
         setLoading(true);
         const response = await api.get(`/api/projects/${projectId}`);
         setProject(response.data.project);
-        setMembers(response.data.members || []);
         setError('');
       } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다";
+        const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다";
         console.error('프로젝트 조회 오류:', err);
         setError(`데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`);
       } finally {
@@ -57,14 +39,10 @@ export default function ProjectDetail() {
       }
     };
 
-    if (isAuthenticated && projectId) {
+    if (projectId) {
       fetchProjectDetails();
     }
-  }, [isAuthenticated, projectId]);
-
-  if (!isAuthenticated) {
-    return null;
-  }
+  }, [projectId]);
 
   if (loading) {
     return (
@@ -153,165 +131,70 @@ export default function ProjectDetail() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 프로젝트 정보 */}
-            <div className="lg:col-span-2">
-              <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-                <div className="p-6">
-                  <h2 className="text-lg font-medium mb-4">프로젝트 정보</h2>
-                  
-                  {project.description && (
-                    <div className="mb-6">
-                      <h3 className="text-sm font-medium text-gray-500 mb-1">설명</h3>
-                      <p className="text-gray-900 dark:text-gray-100">{project.description}</p>
-                    </div>
-                  )}
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {project.category && (
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500 mb-1">카테고리</h3>
-                        <p className="text-gray-900 dark:text-gray-100">{project.category}</p>
+          <div className="py-6">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* 프로젝트 정보 */}
+                <div className="lg:col-span-2">
+                  <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {project.name}
+                      </h1>
+                      <div className="flex space-x-2">
+                        <Link
+                          to={`/dashboard/projects/${project.id}/documents`}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          문서 관리
+                        </Link>
+                        <Link
+                          to={`/dashboard/projects/${project.id}/settings`}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          설정
+                        </Link>
                       </div>
-                    )}
-                    
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500 mb-1">문서 수</h3>
-                      <p className="text-gray-900 dark:text-gray-100">{project.documentCount}개</p>
                     </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500 mb-1">생성 일시</h3>
-                      <p className="text-gray-900 dark:text-gray-100">
-                        {new Date(project.createdAt).toLocaleDateString()}
-                      </p>
+
+                    <div className="mt-4 text-gray-700 dark:text-gray-300">
+                      {project.description}
                     </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500 mb-1">마지막 수정</h3>
-                      <p className="text-gray-900 dark:text-gray-100">
-                        {new Date(project.updatedAt).toLocaleDateString()}
-                      </p>
+
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">카테고리</h3>
+                        <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">{project.category}</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">공개 여부</h3>
+                        <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">{project.isPublic ? '공개' : '비공개'}</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">문서 수</h3>
+                        <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">{project.documentCount}</p>
+                      </div>
                     </div>
-                  </div>
-                  
-                  {project.tags && project.tags.length > 0 && (
+
                     <div className="mt-6">
-                      <h3 className="text-sm font-medium text-gray-500 mb-2">태그</h3>
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">태그</h3>
                       <div className="flex flex-wrap gap-2">
-                        {project.tags.map((tag) => (
+                        {project.tags.map((tag, index) => (
                           <span
-                            key={tag}
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                            key={index}
+                            className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                           >
                             {tag}
                           </span>
                         ))}
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-6 bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-                <div className="p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-medium">문서</h2>
-                    <Link
-                      to={`/dashboard/projects/${projectId}/documents/upload`}
-                      className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500"
-                    >
-                      + 문서 업로드
-                    </Link>
-                  </div>
-                  
-                  {project.documentCount === 0 ? (
-                    <div className="text-center py-8">
-                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">문서 없음</h3>
-                      <p className="mt-1 text-sm text-gray-500">이 프로젝트에 아직 문서가 없습니다.</p>
-                      <div className="mt-6">
-                        <Link
-                          to={`/dashboard/projects/${projectId}/documents/upload`}
-                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                        >
-                          문서 업로드
-                        </Link>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <Link
-                        to={`/dashboard/projects/${projectId}/documents`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        모든 문서 보기
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* 사이드바 - 멤버 정보 및 설정 */}
-            <div>
-              <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-                <div className="p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-medium">멤버</h2>
-                    <button
-                      className="text-sm font-medium text-blue-600 hover:text-blue-500"
-                    >
-                      + 멤버 초대
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {members.map((member) => (
-                      <div key={member.id} className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-xs font-medium">{member.userId.substring(0, 2).toUpperCase()}</span>
-                          </div>
-                          <div className="ml-3">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {member.userId === project.ownerId ? '소유자' : member.userId}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {member.role}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </div>
-              </div>
 
-              <div className="mt-6 bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-                <div className="p-6">
-                  <h2 className="text-lg font-medium mb-4">설정</h2>
-                  
-                  <div className="space-y-4">
-                    <Link
-                      to={`/dashboard/projects/${projectId}/settings`}
-                      className="block text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600"
-                    >
-                      프로젝트 설정
-                    </Link>
-                    <button
-                      className="block text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600"
-                    >
-                      {project.isArchived ? '아카이브 해제' : '아카이브'}
-                    </button>
-                    <button
-                      className="block text-sm text-red-600 hover:text-red-800"
-                    >
-                      프로젝트 삭제
-                    </button>
-                  </div>
+                {/* 질의응답 인터페이스 */}
+                <div className="lg:col-span-1">
+                  <ChatInterface projectId={project.id} className="h-full" />
                 </div>
               </div>
             </div>
